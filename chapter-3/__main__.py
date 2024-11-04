@@ -1,6 +1,3 @@
-"""An AWS Python Pulumi program"""
-
-import pulumi
 import pulumi_aws as aws
 
 vpc = aws.ec2.Vpc(
@@ -92,6 +89,15 @@ admin_policy_attachment = aws.iam.RolePolicyAttachment(
     policy_arn="arn:aws:iam::aws:policy/AdministratorAccess",
 )
 
+log_groups = ["DAGProcessing", "Scheduler", "Task", "WebServer", "Worker"]
+
+log_group_resources = []
+for group in log_groups:
+    name = f"airflow-my-airflow-env-{group}"
+    log_group_resources.append(
+        aws.cloudwatch.LogGroup(name, retention_in_days=1, name=name)
+    )
+
 mwaa_environment = aws.mwaa.Environment(
     "airflow-environment",
     name="my-airflow-env",
@@ -104,6 +110,9 @@ mwaa_environment = aws.mwaa.Environment(
         "subnetIds": [private_subnet_1.id, private_subnet_2.id],
         "securityGroupIds": [security_group.id],
     },
+    max_workers=2,
+    min_webservers=2,
+    max_webservers=2,
     logging_configuration={
         "dagProcessingLogs": {
             "enabled": True,
@@ -118,6 +127,10 @@ mwaa_environment = aws.mwaa.Environment(
             "logLevel": "INFO",
         },
         "schedulerLogs": {
+            "enabled": True,
+            "logLevel": "INFO",
+        },
+        "workerLogs": {
             "enabled": True,
             "logLevel": "INFO",
         },
