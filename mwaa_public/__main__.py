@@ -5,7 +5,7 @@ import pulumi
 import pulumi_aws as aws
 
 from iam import mwaa_execution_role
-from network import private_subnet_1, private_subnet_2
+from network import private_subnet_1, private_subnet_2, security_group
 
 
 current = aws.get_caller_identity()
