@@ -6,6 +6,7 @@ import pulumi_aws as aws
 
 from iam import mwaa_execution_role
 from network import private_subnet_1, private_subnet_2, security_group
+from dashboard import dashboard
 
 
 current = aws.get_caller_identity()
@@ -158,3 +159,5 @@ mwaa_environment = aws.mwaa.Environment(
     webserver_access_mode="PUBLIC_ONLY",
     airflow_configuration_options={"logging.logging_level": "INFO"},
 )
+
+pulumi.export("dashboard_name", dashboard.dashboard_name)
