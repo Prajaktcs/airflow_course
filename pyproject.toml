@@ -1,0 +1,19 @@
+[tool.basedpyright]
+include = ["src"]
+exclude = ["**/node_modules",
+    "**/__pycache__",
+]
+defineConstant = { DEBUG = true }
+venvPath = "./"
+venv = "venv"
+
+reportMissingImports = "error"
+reportMissingTypeStubs = false
+
+pythonVersion = "3.12"
+pythonPlatform = "Darwin"
+
+
+executionEnvironments = [
+  { root = "src" }
+]
