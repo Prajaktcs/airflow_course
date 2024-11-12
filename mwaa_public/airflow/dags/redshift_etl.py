@@ -1,23 +1,54 @@
 from airflow import DAG
+from airflow.models import Variable
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
-from airflow.providers.amazon.aws.operators.redshift import RedshiftSQLOperator
+from airflow.providers.amazon.aws.transfers.s3_to_redshift import S3ToRedshiftOperator
+from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.operators.python import PythonOperator
 from datetime import datetime
+import random
+import string
 
 AWS_CONN_ID = "aws_default"
 POSTGRES_CONN_ID = "aurora_postgres"
 REDSHIFT_CONN_ID = "redshift"
-S3_BUCKET_NAME = "your-s3-bucket"
+S3_BUCKET_NAME = "my-data-exchange-bucket-937696862165"
 S3_KEY = "data/from_aurora.csv"
-REDSHIFT_TABLE = "your_redshift_table"
+REDSHIFT_TABLE = "aurora_table"
+
+
+def random_str_generator(size=10, chars=string.ascii_uppercase + string.digits):
+    return "".join(random.choice(chars) for _ in range(size))
+
+
+def initialize_schema_postgres():
+    if not Variable.get("postgres_initialized", default_var=False):
+        postgres_hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
+        with postgres_hook.get_conn() as conn:
+            with conn.cursor() as cursor:
+                query = "CREATE TABLE aurora_table(id serial primary key, value varchar(50))"
+                cursor.execute(query)
+            conn.commit()
+
+
+def initialize_data_postgres():
+    if not Variable.get("postgres_initialized", default_var=False):
+        postgres_hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
+        with postgres_hook.get_conn() as conn:
+            with conn.cursor() as cursor:
+                for _ in range(1, 10):
+                    query = f"insert into aurora_table(value) values('{random_str_generator()}')"
+                    cursor.execute(query)
+            conn.commit()
+
+        Variable.set("postgres_initialized", True)
 
 
 def extract_data_from_aurora():
     postgres_hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
     conn = postgres_hook.get_conn()
     cursor = conn.cursor()
-    query = "SELECT * FROM your_aurora_table"
+    query = "SELECT * FROM aurora_table"
     cursor.execute(query)
 
     rows = cursor.fetchall()
@@ -37,20 +68,37 @@ with DAG(
     schedule_interval=None,
     catchup=False,
 ) as dag:
+    postgres_schema = PythonOperator(
+        task_id="initialize_postgres_schema",
+        python_callable=initialize_schema_postgres,
+    )
+
+    postgres_data = PythonOperator(
+        task_id="initialize_postgres_data",
+        python_callable=initialize_data_postgres,
+    )
+
     extract_data = PythonOperator(
         task_id="extract_data_from_aurora",
         python_callable=extract_data_from_aurora,
     )
 
-    load_to_redshift = RedshiftSQLOperator(
-        task_id="load_data_into_redshift",
-        sql=f"""
-            COPY {REDSHIFT_TABLE}
-            FROM 's3://{S3_BUCKET_NAME}/{S3_KEY}'
-            IAM_ROLE 'your-redshift-iam-role-arn'
-            CSV;
-        """,
-        redshift_conn_id=REDSHIFT_CONN_ID,
+    # Task to create a table in Redshift
+    init_redshift_schema = PostgresOperator(
+        task_id="init_redshift_schema",
+        sql="/sql/redshift_aurora.sql",
+        postgres_conn_id=REDSHIFT_CONN_ID,
     )
 
-    extract_data >> load_to_redshift
+    load_to_redshift = S3ToRedshiftOperator(
+        task_id="load_data_into_redshift",
+        table=REDSHIFT_TABLE,
+        schema="public",
+        s3_bucket=S3_BUCKET_NAME,
+        s3_key=S3_KEY,
+        redshift_conn_id=REDSHIFT_CONN_ID,
+        copy_options=["CSV", "DELIMITER ','"],
+    )
+
+    postgres_schema >> postgres_data
+    postgres_data >> extract_data >> init_redshift_schema >> load_to_redshift

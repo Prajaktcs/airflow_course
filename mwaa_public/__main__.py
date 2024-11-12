@@ -105,17 +105,26 @@ requirements_file = aws.s3.BucketObjectv2(
 
 folder_name = "airflow/dags"
 
-for file in os.listdir(folder_name):
-    file_path = os.path.join(folder_name, file)
-    if os.path.isfile(file_path):
+# Traverse the directory recursively
+for root, dirs, files in os.walk(folder_name):
+    for file in files:
+        # Get the full file path
+        file_path = os.path.join(root, file)
+
+        # Construct the S3 key by removing the root folder path
+        relative_path = os.path.relpath(file_path, folder_name)
+        s3_key = f"dags/{relative_path}"
+
+        # Create the S3 BucketObject for each file
         aws.s3.BucketObjectv2(
-            f"dags/{file}",
+            s3_key,
             bucket=bucket.id,
-            key=f"dags/{file}",
+            key=s3_key,
             source=pulumi.FileAsset(file_path),
             kms_key_id=encryption_key.arn,
             server_side_encryption="aws:kms",
         )
+
 
 mwaa_environment = aws.mwaa.Environment(
     "airflow-environment",
@@ -146,7 +155,7 @@ mwaa_environment = aws.mwaa.Environment(
         },
         "webserver_logs": {
             "enabled": True,
-            "logLevel": "INFO",
+            "logLevel": "CRITICAL",
         },
         "scheduler_logs": {
             "enabled": True,

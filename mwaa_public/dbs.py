@@ -3,7 +3,7 @@ import json
 import pulumi
 import pulumi_aws as aws
 
-from network import private_subnet_1, private_subnet_2, vpc
+from network import private_subnet_1, private_subnet_2, private_subnet_3, vpc
 
 current = aws.get_caller_identity()
 
@@ -118,10 +118,36 @@ redshift_namespace = aws.redshiftserverless.Namespace(
     iam_roles=[redshift_role.arn],
 )
 
+redshift_security_group = aws.ec2.SecurityGroup(
+    "redshift-security-group",
+    vpc_id=vpc.id,
+    description="security group for database",
+    ingress=[
+        {
+            "protocol": "tcp",
+            "from_port": 5439,
+            "to_port": 5439,
+            "cidr_blocks": [private_subnet_1.cidr_block, private_subnet_2.cidr_block],
+        },
+        {
+            "protocol": "tcp",
+            "from_port": 5439,
+            "to_port": 5439,
+            "self": True,
+        },
+    ],
+    egress=[
+        {"protocol": "-1", "from_port": 0, "to_port": 0, "cidr_blocks": ["0.0.0.0/0"]},
+    ],
+)
+
+
 redshift_workgroup = aws.redshiftserverless.Workgroup(
     "redshift-workgroup",
     workgroup_name="my-redshift-workgroup",
     namespace_name=redshift_namespace.namespace_name,
     base_capacity=32,  # Serverless resource capacity, choose appropriate range
     publicly_accessible=False,
+    security_group_ids=[redshift_security_group.id],
+    subnet_ids=[private_subnet_1.id, private_subnet_2.id, private_subnet_3],
 )

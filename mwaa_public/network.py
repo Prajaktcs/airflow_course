@@ -67,6 +67,13 @@ private_subnet_2 = aws.ec2.Subnet(
     availability_zone="us-west-2b",
 )
 
+private_subnet_3 = aws.ec2.Subnet(
+    "private-subnet-3",
+    vpc_id=vpc.id,
+    cidr_block="10.0.5.0/24",
+    availability_zone="us-west-2c",
+)
+
 nat_eip_a = aws.ec2.Eip("nat-eip-a", domain="vpc")
 nat_eip_b = aws.ec2.Eip("nat-eip-b", domain="vpc")
 
@@ -104,6 +111,12 @@ private_subnet_1_route_assoc = aws.ec2.RouteTableAssociation(
 private_subnet_2_route_assoc = aws.ec2.RouteTableAssociation(
     "private-subnet-2-route-association",
     subnet_id=private_subnet_2.id,
+    route_table_id=private_route_table_b.id,
+)
+
+private_subnet_3_route_assoc = aws.ec2.RouteTableAssociation(
+    "private-subnet-3-route-association",
+    subnet_id=private_subnet_3.id,
     route_table_id=private_route_table_b.id,
 )
 

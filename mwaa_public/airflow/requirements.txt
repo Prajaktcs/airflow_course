@@ -4,3 +4,4 @@ pandas
 requests
 pyarrow
 apache-airflow-providers-amazon
+apache-airflow[amazon]
