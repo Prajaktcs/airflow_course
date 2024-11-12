@@ -7,6 +7,7 @@ import pulumi_aws as aws
 from iam import mwaa_execution_role
 from network import private_subnet_1, private_subnet_2, security_group
 from dashboard import dashboard
+from dbs import aurora_cluster, data_exchange_bucket, redshift_workgroup
 
 
 current = aws.get_caller_identity()
@@ -161,3 +162,6 @@ mwaa_environment = aws.mwaa.Environment(
 )
 
 pulumi.export("dashboard_name", dashboard.dashboard_name)
+pulumi.export("aurora_cluster_endpoint", aurora_cluster.endpoint)
+pulumi.export("s3_bucket_name", data_exchange_bucket.bucket)
+pulumi.export("redshift_endpoint", redshift_workgroup.endpoints)

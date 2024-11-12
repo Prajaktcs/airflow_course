@@ -5,6 +5,8 @@ import pulumi_aws as aws
 
 from network import private_subnet_1, private_subnet_2, vpc
 
+current = aws.get_caller_identity()
+
 db_security_group = aws.ec2.SecurityGroup(
     "db-security-group",
     vpc_id=vpc.id,
@@ -30,11 +32,11 @@ aurora_cluster = aws.rds.Cluster(
     scaling_configuration={
         "auto_pause": True,
         "min_capacity": 2,
-        "max_capacity": 16,
+        "max_capacity": 2,
         "seconds_until_auto_pause": 300,  # Set auto-pause timeout (5 mins)
     },
     database_name="my_database",
-    master_username="admin",
+    master_username="airflow",
     master_password="SecurePassword123!",  # Update with a secure password
     skip_final_snapshot=True,
     vpc_security_group_ids=[db_security_group.id],
@@ -44,19 +46,10 @@ aurora_cluster = aws.rds.Cluster(
     ).name,
 )
 
-# Aurora Cluster Instance for connectivity
-aurora_instance = aws.rds.ClusterInstance(
-    "aurora-serverless-instance",
-    engine="aurora-postgresql",
-    cluster_identifier=aurora_cluster.id,
-    instance_class="db.serverless",  # Aurora serverless instance type
-)
-
-
 # S3 Bucket for Data Exchange
 data_exchange_bucket = aws.s3.Bucket(
     "data-exchange-bucket",
-    bucket="my-data-exchange-bucket",
+    bucket=f"my-data-exchange-bucket-{current.account_id}",
     force_destroy=True,  # Destroys all objects in bucket if bucket is deleted
 )
 
@@ -73,71 +66,22 @@ bucket_encryption = aws.s3.BucketServerSideEncryptionConfigurationV2(
     ],
 )
 
-# Grant Aurora Access to S3 Bucket
-aurora_s3_policy = aws.iam.Policy(
-    "auroraS3Policy",
-    policy=pulumi.Output.all(data_exchange_bucket.arn).apply(
-        lambda bucket_arn: json.dumps(
-            {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Action": ["s3:PutObject", "s3:GetObject", "s3:ListBucket"],
-                        "Resource": [bucket_arn, f"{bucket_arn}/*"],
-                    }
-                ],
-            }
-        )
-    ),
-)
-
-# Attach Policy to Aurora Cluster Role
-aurora_role = aws.iam.Role(
-    "auroraS3Role",
-    assume_role_policy=json.dumps(
+access_to_data_exchange_bucket = aws.iam.get_policy_document_output(
+    statements=[
         {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {"Service": "rds.amazonaws.com"},
-                    "Action": "sts:AssumeRole",
-                }
+            "actions": ["s3:*"],
+            "resources": [
+                data_exchange_bucket.arn,
+                data_exchange_bucket.arn.apply(lambda arn: f"{arn}/*"),
             ],
         }
-    ),
+    ]
 )
 
-aurora_role_policy_attachment = aws.iam.RolePolicyAttachment(
-    "auroraS3RoleAttachment", role=aurora_role.name, policy_arn=aurora_s3_policy.arn
-)
-
-# Associate Aurora Cluster Role for Accessing S3
-aurora_cluster_role = aws.rds.ClusterRoleAssociation(
-    "auroraClusterRoleAssociation",
-    feature_name="S3_INTEGRATION",
-    db_cluster_identifier=aurora_cluster.id,
-    role_arn=aurora_role.arn,
-)
 
 # Grant Redshift Access to S3 Bucket
 redshift_s3_policy = aws.iam.Policy(
-    "redshiftS3Policy",
-    policy=pulumi.Output.all(data_exchange_bucket.arn).apply(
-        lambda bucket_arn: json.dumps(
-            {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Action": ["s3:PutObject", "s3:GetObject", "s3:ListBucket"],
-                        "Resource": [bucket_arn, f"{bucket_arn}/*"],
-                    }
-                ],
-            }
-        )
-    ),
+    "redshiftS3Policy", policy=access_to_data_exchange_bucket.json
 )
 
 # Attach Policy to Redshift IAM Role
@@ -171,7 +115,7 @@ redshift_namespace = aws.redshiftserverless.Namespace(
     db_name="my_redshift_db",
     admin_username="admin",
     admin_user_password="SecurePassword123!",  # Update with a secure password
-    iam_roles=[redshift_role],
+    iam_roles=[redshift_role.arn],
 )
 
 redshift_workgroup = aws.redshiftserverless.Workgroup(
