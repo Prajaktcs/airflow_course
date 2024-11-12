@@ -67,8 +67,8 @@ private_subnet_2 = aws.ec2.Subnet(
     availability_zone="us-west-2b",
 )
 
-nat_eip_a = aws.ec2.Eip("nat-eip-a", vpc=True)
-nat_eip_b = aws.ec2.Eip("nat-eip-b", vpc=True)
+nat_eip_a = aws.ec2.Eip("nat-eip-a", domain="vpc")
+nat_eip_b = aws.ec2.Eip("nat-eip-b", domain="vpc")
 
 nat_gateway_a = aws.ec2.NatGateway(
     "gateway-a", subnet_id=public_subnet.id, allocation_id=nat_eip_a.id
