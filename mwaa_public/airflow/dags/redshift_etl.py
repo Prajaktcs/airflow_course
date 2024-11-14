@@ -22,26 +22,22 @@ def random_str_generator(size=10, chars=string.ascii_uppercase + string.digits):
 
 
 def initialize_schema_postgres():
-    if not Variable.get("postgres_initialized", default_var=False):
-        postgres_hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
-        with postgres_hook.get_conn() as conn:
-            with conn.cursor() as cursor:
-                query = "CREATE TABLE aurora_table(id serial primary key, value varchar(50))"
-                cursor.execute(query)
-            conn.commit()
+    postgres_hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
+    with postgres_hook.get_conn() as conn:
+        with conn.cursor() as cursor:
+            query = "CREATE TABLE IF NOT EXISTS aurora_table(id serial primary key, value varchar(50))"
+            cursor.execute(query)
+        conn.commit()
 
 
 def initialize_data_postgres():
-    if not Variable.get("postgres_initialized", default_var=False):
-        postgres_hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
-        with postgres_hook.get_conn() as conn:
-            with conn.cursor() as cursor:
-                for _ in range(1, 10):
-                    query = f"insert into aurora_table(value) values('{random_str_generator()}')"
-                    cursor.execute(query)
-            conn.commit()
-
-        Variable.set("postgres_initialized", True)
+    postgres_hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
+    with postgres_hook.get_conn() as conn:
+        with conn.cursor() as cursor:
+            for _ in range(1, 10):
+                query = f"insert into aurora_table(value) values('{random_str_generator()}')"
+                cursor.execute(query)
+        conn.commit()
 
 
 def extract_data_from_aurora():
@@ -65,7 +61,7 @@ default_args = {"start_date": datetime(2023, 1, 1), "retries": 1}
 with DAG(
     "aurora_to_redshift",
     default_args=default_args,
-    schedule_interval=None,
+    schedule_interval="*/5 * * * *",
     catchup=False,
 ) as dag:
     postgres_schema = PythonOperator(
@@ -96,6 +92,8 @@ with DAG(
         schema="public",
         s3_bucket=S3_BUCKET_NAME,
         s3_key=S3_KEY,
+        method="UPSERT",
+        upsert_keys=["id"],
         redshift_conn_id=REDSHIFT_CONN_ID,
         copy_options=["CSV", "DELIMITER ','"],
     )
