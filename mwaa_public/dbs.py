@@ -146,7 +146,7 @@ redshift_workgroup = aws.redshiftserverless.Workgroup(
     "redshift-workgroup",
     workgroup_name="my-redshift-workgroup",
     namespace_name=redshift_namespace.namespace_name,
-    base_capacity=32,  # Serverless resource capacity, choose appropriate range
+    base_capacity=8,  # Serverless resource capacity, choose appropriate range
     publicly_accessible=False,
     security_group_ids=[redshift_security_group.id],
     subnet_ids=[private_subnet_1.id, private_subnet_2.id, private_subnet_3],
