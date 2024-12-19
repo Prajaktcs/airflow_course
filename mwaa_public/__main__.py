@@ -7,7 +7,6 @@ import pulumi_aws as aws
 from iam import mwaa_execution_role
 from network import private_subnet_1, private_subnet_2, security_group
 from dashboard import dashboard
-from dbs import aurora_cluster, data_exchange_bucket, redshift_workgroup
 
 
 current = aws.get_caller_identity()
@@ -108,22 +107,23 @@ folder_name = "airflow/dags"
 # Traverse the directory recursively
 for root, dirs, files in os.walk(folder_name):
     for file in files:
-        # Get the full file path
-        file_path = os.path.join(root, file)
+        if not file.endswith(".pyc"):
+            # Get the full file path
+            file_path = os.path.join(root, file)
 
-        # Construct the S3 key by removing the root folder path
-        relative_path = os.path.relpath(file_path, folder_name)
-        s3_key = f"dags/{relative_path}"
+            # Construct the S3 key by removing the root folder path
+            relative_path = os.path.relpath(file_path, folder_name)
+            s3_key = f"dags/{relative_path}"
 
-        # Create the S3 BucketObject for each file
-        aws.s3.BucketObjectv2(
-            s3_key,
-            bucket=bucket.id,
-            key=s3_key,
-            source=pulumi.FileAsset(file_path),
-            kms_key_id=encryption_key.arn,
-            server_side_encryption="aws:kms",
-        )
+            # Create the S3 BucketObject for each file
+            aws.s3.BucketObjectv2(
+                s3_key,
+                bucket=bucket.id,
+                key=s3_key,
+                source=pulumi.FileAsset(file_path),
+                kms_key_id=encryption_key.arn,
+                server_side_encryption="aws:kms",
+            )
 
 
 mwaa_environment = aws.mwaa.Environment(
@@ -141,13 +141,14 @@ mwaa_environment = aws.mwaa.Environment(
         "subnetIds": [private_subnet_1.id, private_subnet_2.id],
         "securityGroupIds": [security_group.id],
     },
+    min_workers=2,
     max_workers=2,
     min_webservers=2,
     max_webservers=2,
     logging_configuration={
         "dag_processing_logs": {
             "enabled": True,
-            "logLevel": "INFO",
+            "logLevel": "ERROR",
         },
         "task_logs": {
             "enabled": True,
@@ -159,18 +160,28 @@ mwaa_environment = aws.mwaa.Environment(
         },
         "scheduler_logs": {
             "enabled": True,
-            "logLevel": "INFO",
+            "logLevel": "ERROR",
         },
         "worker_logs": {
             "enabled": True,
-            "logLevel": "INFO",
+            "logLevel": "DEBUG",
         },
     },
     webserver_access_mode="PUBLIC_ONLY",
-    airflow_configuration_options={"logging.logging_level": "INFO"},
+    airflow_configuration_options={
+        "logging.logging_level": "INFO",
+        "core.parallelism": "100",
+        "celery.worker_autoscale": "5,5",
+        "core.max_active_tasks_per_dag": "50",
+        "celery.sync_parallelism": "1",
+        "scheduler.parsing_processes": "2",
+        "core.min_serialized_dag_update_interval": "300",
+        "scheduler.min_file_process_interval": "300",
+        "scheduler.dag_dir_list_interval": "600",
+        "celery.sync_parallelism": "1",
+        "core.dag_file_processor_timeout": "100",
+        "core.dagbag_import_timeout": "60",
+    },
 )
 
 pulumi.export("dashboard_name", dashboard.dashboard_name)
-pulumi.export("aurora_cluster_endpoint", aurora_cluster.endpoint)
-pulumi.export("s3_bucket_name", data_exchange_bucket.bucket)
-pulumi.export("redshift_endpoint", redshift_workgroup.endpoints)
