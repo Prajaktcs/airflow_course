@@ -171,7 +171,7 @@ mwaa_environment = aws.mwaa.Environment(
     airflow_configuration_options={
         "logging.logging_level": "INFO",
         "core.parallelism": "100",
-        "celery.worker_autoscale": "5,5",
+        "celery.worker_autoscale": "7,7",
         "core.max_active_tasks_per_dag": "50",
         "celery.sync_parallelism": "1",
         "scheduler.parsing_processes": "2",
