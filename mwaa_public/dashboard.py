@@ -171,7 +171,7 @@ widgets = [
                     "Executor",
                 ]
             ],
-            "stat": "Average",
+            "stat": "Maximum",
             "region": aws.config.region,
             "period": 300,
         },

@@ -141,8 +141,8 @@ mwaa_environment = aws.mwaa.Environment(
         "subnetIds": [private_subnet_1.id, private_subnet_2.id],
         "securityGroupIds": [security_group.id],
     },
-    min_workers=2,
-    max_workers=2,
+    min_workers=6,
+    max_workers=6,
     min_webservers=2,
     max_webservers=2,
     logging_configuration={
