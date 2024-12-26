@@ -20,6 +20,7 @@ SLEEP_TIME=20
     schedule_interval=None,
     start_date=datetime(2023, 1, 1),
     catchup=False,
+    max_active_takes=8,
     description="Test task parallelism with TaskFlow API using dynamic task mapping",
 )
 def test_task_parallelism():
