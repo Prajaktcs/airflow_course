@@ -102,7 +102,7 @@ requirements_file = aws.s3.BucketObjectv2(
     server_side_encryption="aws:kms",
 )
 
-folder_name = "airflow/dags"
+folder_name = "../dags"
 
 # Traverse the directory recursively
 for root, dirs, files in os.walk(folder_name):
