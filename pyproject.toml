@@ -1,5 +1,5 @@
 [tool.basedpyright]
-include = ["src"]
+include = ["dags", "mwaa_public"]
 exclude = ["**/node_modules",
     "**/__pycache__",
 ]
@@ -12,8 +12,3 @@ reportMissingTypeStubs = false
 
 pythonVersion = "3.12"
 pythonPlatform = "Darwin"
-
-
-executionEnvironments = [
-  { root = "src" }
-]
