@@ -1,6 +1,6 @@
 ## Purpose
 
-Code for [youtube channel](https://studio.youtube.com/channel/UCRdnPRQnDKFB7KKFyXo4ekw)
+Code for [youtube channel](https://www.youtube.com/channel/UCRdnPRQnDKFB7KKFyXo4ekw)
 
 ### Setup
 
