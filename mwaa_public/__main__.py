@@ -97,7 +97,7 @@ requirements_file = aws.s3.BucketObjectv2(
     "requirements.txt",
     bucket=bucket.id,
     key="requirements.txt",
-    source=pulumi.FileAsset("./airflow/requirements.txt"),
+    source=pulumi.FileAsset("../airflow-requirements.txt"),
     kms_key_id=encryption_key.arn,
     server_side_encryption="aws:kms",
 )
@@ -178,7 +178,6 @@ mwaa_environment = aws.mwaa.Environment(
         "core.min_serialized_dag_update_interval": "300",
         "scheduler.min_file_process_interval": "300",
         "scheduler.dag_dir_list_interval": "600",
-        "celery.sync_parallelism": "1",
         "core.dag_file_processor_timeout": "100",
         "core.dagbag_import_timeout": "60",
     },
