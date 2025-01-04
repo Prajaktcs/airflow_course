@@ -1,0 +1,30 @@
+name: DAG Validation
+
+on:
+  push:
+    branches: ["*"]
+
+jobs:
+  dag-validation:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Check out your code
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # 2. Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 3. Install dependencies (including Airflow)
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r airflow-requirements.txt
+
+      # 4. Run DAG import test
+      - name: Validate DAGs
+        run: |
+          python tests/test_dag_import.py
