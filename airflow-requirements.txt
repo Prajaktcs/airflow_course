@@ -1,5 +1,8 @@
+--constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.10.4/constraints-3.11.txt"
+
 pandas
 requests
 pyarrow
 apache-airflow-providers-amazon
 apache-airflow[amazon]
+apache-airflow[postgres]
