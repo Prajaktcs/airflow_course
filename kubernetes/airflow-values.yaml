@@ -276,6 +276,9 @@ allowPodLaunching: true
 env:
   - name: AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG
     value: "4"
+  - name: AIRFLOW__METRICS__METRICS_ALLOW_LIST
+    value: "scheduler,executor,dagrun,pool,triggerer,job"
+
 # - name: ""
 #   value: ""
 
