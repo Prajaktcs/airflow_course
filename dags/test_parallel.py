@@ -9,8 +9,8 @@ default_args = {
     "retries": 0,
 }
 
-PARALLEL_TASKS=100
-SLEEP_TIME=20
+PARALLEL_TASKS = 100
+SLEEP_TIME = 20
 
 
 # Define the DAG
@@ -20,11 +20,10 @@ SLEEP_TIME=20
     schedule_interval=None,
     start_date=datetime(2023, 1, 1),
     catchup=False,
-    max_active_tasks=8,
+    max_active_tasks=4,
     description="Test task parallelism with TaskFlow API using dynamic task mapping",
 )
 def test_task_parallelism():
-
     @task
     def generate_numbers():
         return list(range(PARALLEL_TASKS))
@@ -44,6 +43,7 @@ def test_task_parallelism():
     print(f"Numbers: {numbers}")
     added_values = add_one.expand(x=numbers)
     sum_it(added_values)
+
 
 # Instantiate the DAG
 dag = test_task_parallelism()
