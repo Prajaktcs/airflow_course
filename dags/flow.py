@@ -1,5 +1,4 @@
 import logging
-import os
 
 import pandas as pd
 import requests
@@ -20,7 +19,6 @@ CSV_FILE_PATH = "output.csv"
     tags=["example", "web_scraping", "data_processing"],
 )
 def fetch_and_save_data():
-
     @task
     def fetch_data():
         """Fetch data from a website."""

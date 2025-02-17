@@ -1,14 +1,17 @@
-[tool.basedpyright]
-include = ["dags", "mwaa_public"]
-exclude = ["**/node_modules",
-    "**/__pycache__",
+[project]
+dependencies = [
+  "apache-airflow",
+  "pulumi>=3.0.0,<4.0.0",
+  "pulumi-aws>=6.0.2,<7.0.0",
+  "pandas",
+  "apache-airflow-providers-amazon",
 ]
-defineConstant = { DEBUG = true }
+name = "airflow_course"
+version = "0.1.0"
+requires-python = ">=3.12.8,<3.13"
+
+[tool.basedpyright]
 venvPath = "./"
-venv = "venv"
+venv = ".venv"
 
-reportMissingImports = "error"
-reportMissingTypeStubs = false
-
-pythonVersion = "3.12"
-pythonPlatform = "Darwin"
+typeCheckingMode = "standard"
