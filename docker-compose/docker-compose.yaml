@@ -1,0 +1,58 @@
+version: "3.7"
+services:
+  aws_local_runner:
+    image: aws_local_runner
+    build:
+      context: ../aws-mwaa-local-runner/docker/
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=Local
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    volumes:
+      - "${PWD}/../dags:/usr/local/airflow/dags"
+      - "${PWD}/plugins:/usr/local/airflow/plugins"
+      - "${PWD}/../airflow-requirements:/usr/local/airflow/requirements"
+      - "${PWD}/startup_script:/usr/local/airflow/startup"
+      - "${PWD}/airflow.cfg:/usr/local/airflow/airflow.cfg"
+    ports:
+      - "8080:8080"
+    command: local-runner
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    env_file:
+      - ../aws-mwaa-local-runner/docker/config/.env.localrunner
+
+  postgres:
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    volumes:
+      - "${PWD}/db-data:/var/lib/postgresql/data"
+
+  localstack:
+    container_name: "${LOCALSTACK_DOCKER_NAME:-localstack}"
+    image: localstack/localstack
+    ports:
+      - "127.0.0.1:4566:4566" # LocalStack Gateway
+      - "127.0.0.1:4510-4559:4510-4559" # external services port range
+    environment:
+      # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
+      - DEBUG=${DEBUG:-0}
+    volumes:
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
