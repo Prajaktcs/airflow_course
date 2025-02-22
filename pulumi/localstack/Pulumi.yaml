@@ -1,0 +1,39 @@
+name: localstack
+description: Localstack resources for airflow
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python
+  aws:accessKey: test
+  aws:s3UsePathStyle: "true"
+  aws:region: "us-east-1"
+  aws:secretKey: test
+  aws:skipCredentialsValidation: "true"
+  aws:skipRequestingAccountId: "true"
+  aws:endpoints:
+    - iam: http://localhost:4566
+    - kms: http://localhost:4566
+    - route53: http://localhost:4566
+    - route53domains: http://localhost:4566
+    - route53recoverycontrolconfig: http://localhost:4566
+    - route53recoveryreadiness: http://localhost:4566
+    - route53resolver: http://localhost:4566
+    - rum: http://localhost:4566
+    - s3: http://localhost:4566
+    - s3api: http://localhost:4566
+    - s3control: http://localhost:4566
+    - s3outposts: http://localhost:4566
+    - secretsmanager: http://localhost:4566
+    - cloudwatch: http://localhost:4566
+    - cloudwatch: http://localhost:4566
+    - cloudwatchevents: http://localhost:4566
+    - cloudwatchevidently: http://localhost:4566
+    - cloudwatchlog: http://localhost:4566
+    - cloudwatchlogs: http://localhost:4566
+    - cloudwatchobservabilityaccessmanager: http://localhost:4566
+    - cloudwatchrum: http://localhost:4566
